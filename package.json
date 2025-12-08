@@ -1,0 +1,19 @@
+{
+  "name": "rentfix-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Production-ready monorepo for Rentfix with web, mobile, and backend services.",
+  "scripts": {
+    "lint": "echo 'add lints per workspace'",
+    "test": "echo 'run workspace tests'",
+    "format": "echo 'format using shared config'"
+  },
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "typescript": "5.3.3"
+  }
+}

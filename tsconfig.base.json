@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@rentfix/types": ["packages/types/src"],
+      "@rentfix/ui": ["packages/ui/src"],
+      "@rentfix/config": ["packages/config/src"],
+      "@rentfix/utils": ["packages/utils/src"]
+    }
+  }
+}
