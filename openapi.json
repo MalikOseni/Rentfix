@@ -1,0 +1,513 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "RentalFix API",
+    "version": "1.0.0",
+    "description": "API contract covering auth, properties, tickets, matching, notifications, evidence, payments, analytics, and AI orchestration."
+  },
+  "servers": [
+    { "url": "https://api.rentalfix.com" },
+    { "url": "http://localhost:3000" }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "summary": "Register a user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegisterRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Login and receive tokens",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } }
+        }
+      }
+    },
+    "/auth/token": {
+      "post": {
+        "summary": "Refresh access token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TokenRefreshRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "summary": "Get current user",
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } }
+        }
+      }
+    },
+    "/properties": {
+      "get": {
+        "summary": "List properties",
+        "parameters": [
+          { "in": "query", "name": "tenantId", "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Property" } } } }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create property",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PropertyCreate" } } }
+        },
+        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Property" } } } } }
+      }
+    },
+    "/units/{id}": {
+      "get": {
+        "summary": "Get unit",
+        "parameters": [ { "in": "path", "name": "id", "required": true, "schema": { "type": "string", "format": "uuid" } } ],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Unit" } } } } }
+      }
+    },
+    "/tickets": {
+      "post": {
+        "summary": "Create ticket",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TicketCreate" } } } },
+        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Ticket" } } } } }
+      },
+      "get": {
+        "summary": "List tickets",
+        "parameters": [
+          { "in": "query", "name": "status", "schema": { "type": "string" } },
+          { "in": "query", "name": "propertyId", "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Ticket" } } } } } }
+      }
+    },
+    "/tickets/{id}": {
+      "patch": {
+        "summary": "Update ticket",
+        "parameters": [ { "in": "path", "name": "id", "required": true, "schema": { "type": "string", "format": "uuid" } } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TicketUpdate" } } } },
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Ticket" } } } } }
+      }
+    },
+    "/match/ticket/{id}": {
+      "post": {
+        "summary": "Match a contractor",
+        "parameters": [ { "in": "path", "name": "id", "required": true, "schema": { "type": "string", "format": "uuid" } } ],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Assignment" } } } } }
+      }
+    },
+    "/assignments/{id}": {
+      "patch": {
+        "summary": "Update assignment status",
+        "parameters": [ { "in": "path", "name": "id", "required": true, "schema": { "type": "string", "format": "uuid" } } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AssignmentUpdate" } } } },
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Assignment" } } } } }
+      }
+    },
+    "/notify": {
+      "post": {
+        "summary": "Send notification",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NotificationSend" } } } },
+        "responses": { "202": { "description": "Accepted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NotificationLog" } } } } }
+      }
+    },
+    "/notify/batch": {
+      "post": {
+        "summary": "Send batch notifications",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/NotificationSend" } } } } },
+        "responses": { "202": { "description": "Accepted", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/NotificationLog" } } } } } }
+      }
+    },
+    "/evidence": {
+      "post": {
+        "summary": "Upload evidence",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EvidenceCreate" } } } },
+        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Evidence" } } } } }
+      }
+    },
+    "/evidence/{ticketId}": {
+      "get": {
+        "summary": "List evidence for ticket",
+        "parameters": [ { "in": "path", "name": "ticketId", "required": true, "schema": { "type": "string", "format": "uuid" } } ],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Evidence" } } } } } }
+      }
+    },
+    "/payments/invoice": {
+      "post": {
+        "summary": "Create invoice/payment",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaymentCreate" } } } },
+        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Payment" } } } } }
+      }
+    },
+    "/payments/{contractorId}": {
+      "get": {
+        "summary": "List payments for contractor",
+        "parameters": [ { "in": "path", "name": "contractorId", "required": true, "schema": { "type": "string", "format": "uuid" } } ],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Payment" } } } } } }
+      }
+    },
+    "/analytics/overview": {
+      "get": {
+        "summary": "Analytics overview",
+        "parameters": [ { "in": "query", "name": "from", "schema": { "type": "string", "format": "date-time" } }, { "in": "query", "name": "to", "schema": { "type": "string", "format": "date-time" } } ],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AnalyticsOverview" } } } } }
+      }
+    },
+    "/analytics/contractors": {
+      "get": {
+        "summary": "Contractor analytics",
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ContractorAnalytics" } } } } } }
+      }
+    },
+    "/analytics/properties": {
+      "get": {
+        "summary": "Property analytics",
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PropertyAnalytics" } } } } } }
+      }
+    },
+    "/ai/classifyImage": {
+      "post": {
+        "summary": "Classify uploaded image",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ImageClassificationRequest" } } } },
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ImageClassificationResponse" } } } } }
+      }
+    },
+    "/ai/triage": {
+      "post": {
+        "summary": "AI triage ticket",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TriageRequest" } } } },
+        "responses": { "202": { "description": "Accepted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TriageResponse" } } } } }
+      }
+    },
+    "/ai/supportCopilot": {
+      "post": {
+        "summary": "Agent support copilot",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CopilotRequest" } } } },
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CopilotResponse" } } } } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "tenantId": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "phone": { "type": "string" },
+          "role": { "type": "string", "enum": ["tenant", "agent", "contractor", "admin"] },
+          "verificationStatus": { "type": "string" },
+          "mfaEnabled": { "type": "boolean" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "name", "email", "role"]
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "format": "password" },
+          "role": { "type": "string", "enum": ["tenant", "agent", "contractor"] },
+          "tenantId": { "type": "string", "format": "uuid" }
+        },
+        "required": ["name", "email", "password", "role"]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "format": "password" }
+        },
+        "required": ["email", "password"]
+      },
+      "TokenRefreshRequest": {
+        "type": "object",
+        "properties": {
+          "refreshToken": { "type": "string" }
+        },
+        "required": ["refreshToken"]
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": { "type": "string" },
+          "refreshToken": { "type": "string" },
+          "user": { "$ref": "#/components/schemas/User" }
+        }
+      },
+      "Property": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "tenantId": { "type": "string", "format": "uuid" },
+          "address": { "type": "string" },
+          "landlordId": { "type": "string", "format": "uuid" },
+          "agentId": { "type": "string", "format": "uuid" },
+          "notes": { "type": "string" }
+        }
+      },
+      "PropertyCreate": {
+        "type": "object",
+        "properties": {
+          "tenantId": { "type": "string", "format": "uuid" },
+          "address": { "type": "string" },
+          "landlordId": { "type": "string", "format": "uuid" },
+          "agentId": { "type": "string", "format": "uuid" },
+          "notes": { "type": "string" }
+        },
+        "required": ["address"]
+      },
+      "Unit": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "propertyId": { "type": "string", "format": "uuid" },
+          "unitNumber": { "type": "string" },
+          "occupancyStatus": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      },
+      "Ticket": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "unitId": { "type": "string", "format": "uuid" },
+          "tenantId": { "type": "string", "format": "uuid" },
+          "issueType": { "type": "string" },
+          "description": { "type": "string" },
+          "urgency": { "type": "string" },
+          "responsibilitySuggestion": { "type": "string" },
+          "status": { "type": "string", "enum": ["new", "triaged", "assigned", "in_progress", "completed", "cancelled"] },
+          "assignedContractorId": { "type": "string", "format": "uuid" },
+          "slaResponseAt": { "type": "string", "format": "date-time" },
+          "slaResolutionAt": { "type": "string", "format": "date-time" },
+          "aiConfidence": { "type": "number", "format": "float" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TicketCreate": {
+        "type": "object",
+        "properties": {
+          "unitId": { "type": "string", "format": "uuid" },
+          "tenantId": { "type": "string", "format": "uuid" },
+          "issueType": { "type": "string" },
+          "description": { "type": "string" },
+          "urgency": { "type": "string" }
+        },
+        "required": ["unitId", "issueType"]
+      },
+      "TicketUpdate": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "assignedContractorId": { "type": "string", "format": "uuid" },
+          "slaResponseAt": { "type": "string", "format": "date-time" },
+          "slaResolutionAt": { "type": "string", "format": "date-time" },
+          "responsibilitySuggestion": { "type": "string" },
+          "urgency": { "type": "string" }
+        }
+      },
+      "Assignment": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "ticketId": { "type": "string", "format": "uuid" },
+          "contractorId": { "type": "string", "format": "uuid" },
+          "scheduledAt": { "type": "string", "format": "date-time" },
+          "acceptedAt": { "type": "string", "format": "date-time" },
+          "completedAt": { "type": "string", "format": "date-time" },
+          "ratingByAgent": { "type": "number", "format": "float" },
+          "ratingByTenant": { "type": "number", "format": "float" },
+          "finalStatus": { "type": "string" }
+        }
+      },
+      "AssignmentUpdate": {
+        "type": "object",
+        "properties": {
+          "scheduledAt": { "type": "string", "format": "date-time" },
+          "acceptedAt": { "type": "string", "format": "date-time" },
+          "completedAt": { "type": "string", "format": "date-time" },
+          "finalStatus": { "type": "string" },
+          "ratingByAgent": { "type": "number", "format": "float" },
+          "ratingByTenant": { "type": "number", "format": "float" }
+        }
+      },
+      "Evidence": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "ticketId": { "type": "string", "format": "uuid" },
+          "fileUrl": { "type": "string" },
+          "type": { "type": "string", "enum": ["photo", "video"] },
+          "capturedBy": { "type": "string", "format": "uuid" },
+          "metadata": { "type": "object" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "EvidenceCreate": {
+        "type": "object",
+        "properties": {
+          "ticketId": { "type": "string", "format": "uuid" },
+          "fileUrl": { "type": "string" },
+          "type": { "type": "string", "enum": ["photo", "video"] },
+          "capturedBy": { "type": "string", "format": "uuid" },
+          "metadata": { "type": "object" }
+        },
+        "required": ["ticketId", "fileUrl", "type"]
+      },
+      "NotificationSend": {
+        "type": "object",
+        "properties": {
+          "userId": { "type": "string", "format": "uuid" },
+          "channel": { "type": "string", "enum": ["email", "sms", "push"] },
+          "messageTemplateId": { "type": "string" },
+          "payload": { "type": "object" }
+        },
+        "required": ["userId", "channel", "messageTemplateId"]
+      },
+      "NotificationLog": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "userId": { "type": "string", "format": "uuid" },
+          "channel": { "type": "string" },
+          "messageTemplateId": { "type": "string" },
+          "payload": { "type": "object" },
+          "deliveredAt": { "type": "string", "format": "date-time" },
+          "status": { "type": "string" }
+        }
+      },
+      "Payment": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "assignmentId": { "type": "string", "format": "uuid" },
+          "amount": { "type": "number", "format": "float" },
+          "status": { "type": "string", "enum": ["pending", "paid", "disputed"] },
+          "method": { "type": "string", "enum": ["card", "bank_transfer", "cash", "other"] },
+          "metadata": { "type": "object" }
+        }
+      },
+      "PaymentCreate": {
+        "type": "object",
+        "properties": {
+          "assignmentId": { "type": "string", "format": "uuid" },
+          "amount": { "type": "number", "format": "float" },
+          "method": { "type": "string" },
+          "metadata": { "type": "object" }
+        },
+        "required": ["assignmentId", "amount"]
+      },
+      "AnalyticsOverview": {
+        "type": "object",
+        "properties": {
+          "responseTimeP95": { "type": "number", "format": "float" },
+          "resolutionTimeP95": { "type": "number", "format": "float" },
+          "openTickets": { "type": "integer" },
+          "completedTickets": { "type": "integer" }
+        }
+      },
+      "ContractorAnalytics": {
+        "type": "object",
+        "properties": {
+          "contractorId": { "type": "string", "format": "uuid" },
+          "averageRating": { "type": "number", "format": "float" },
+          "jobsCompleted": { "type": "integer" },
+          "firstTimeFixRate": { "type": "number", "format": "float" }
+        }
+      },
+      "PropertyAnalytics": {
+        "type": "object",
+        "properties": {
+          "propertyId": { "type": "string", "format": "uuid" },
+          "openTickets": { "type": "integer" },
+          "averageResolutionTime": { "type": "number", "format": "float" }
+        }
+      },
+      "ImageClassificationRequest": {
+        "type": "object",
+        "properties": {
+          "ticketId": { "type": "string", "format": "uuid" },
+          "fileUrl": { "type": "string" },
+          "metadata": { "type": "object" }
+        },
+        "required": ["fileUrl"]
+      },
+      "ImageClassificationResponse": {
+        "type": "object",
+        "properties": {
+          "labels": { "type": "array", "items": { "type": "string" } },
+          "confidence": { "type": "number", "format": "float" },
+          "fallbackUsed": { "type": "boolean" }
+        }
+      },
+      "TriageRequest": {
+        "type": "object",
+        "properties": {
+          "ticketId": { "type": "string", "format": "uuid" },
+          "issueType": { "type": "string" },
+          "description": { "type": "string" },
+          "urgency": { "type": "string" }
+        },
+        "required": ["ticketId", "issueType"]
+      },
+      "TriageResponse": {
+        "type": "object",
+        "properties": {
+          "suggestedResponsibility": { "type": "string" },
+          "confidence": { "type": "number", "format": "float" },
+          "sla": { "type": "string" }
+        }
+      },
+      "CopilotRequest": {
+        "type": "object",
+        "properties": {
+          "ticketId": { "type": "string", "format": "uuid" },
+          "prompt": { "type": "string" }
+        },
+        "required": ["prompt"]
+      },
+      "CopilotResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "sources": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}
