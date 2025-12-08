@@ -1,0 +1,9 @@
+{
+  "name": "@rentfix/eslint-config",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.json",
+  "peerDependencies": {
+    "eslint": "^8.0.0"
+  }
+}
