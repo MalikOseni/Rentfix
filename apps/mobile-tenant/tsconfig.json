@@ -3,10 +3,9 @@
   "compilerOptions": {
     "jsx": "react-native",
     "lib": ["esnext"],
-    "types": ["react", "react-native", "jest"],
-    "allowSyntheticDefaultImports": true,
-    "baseUrl": "./src"
+    "types": ["react", "react-native"],
+    "allowSyntheticDefaultImports": true
   },
-  "include": ["src", "jest.setup.ts"],
+  "include": ["src"],
   "exclude": ["node_modules"]
 }
