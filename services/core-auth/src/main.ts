@@ -14,6 +14,8 @@ ddTrace.init({
 if (process.env.SENTRY_DSN) {
   Sentry.init({ dsn: process.env.SENTRY_DSN });
 }
+import { NestFactory } from '@nestjs/core';
+import { AuthModule } from './modules/auth.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AuthModule, { bufferLogs: true });

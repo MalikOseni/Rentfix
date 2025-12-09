@@ -44,91 +44,17 @@
 
 body {
   margin: 0;
-  min-height: 100vh;
-  background: var(--color-surface-muted);
-  color: var(--color-text);
+  padding: 1.5rem;
+  line-height: 1.6;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-a:focus-visible,
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 3px solid var(--color-primary-muted);
-  outline-offset: 2px;
+header {
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
 }
 
 main {
-  min-height: 100vh;
-}
-
-.dashboard-grid {
   display: grid;
-  gap: 16px;
-}
-
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px;
-}
-
-.table-responsive {
-  overflow-x: auto;
-  width: 100%;
-}
-
-.muted {
-  color: var(--color-muted);
-}
-
-.status-chip {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.status-chip[data-variant='success'] {
-  background: rgba(31, 157, 85, 0.12);
-  color: #166534;
-}
-
-.status-chip[data-variant='warning'] {
-  background: rgba(234, 88, 12, 0.14);
-  color: #9a3412;
-}
-
-.status-chip[data-variant='danger'] {
-  background: rgba(225, 29, 72, 0.15);
-  color: #9f1239;
-}
-
-.status-chip[data-variant='info'] {
-  background: rgba(11, 107, 203, 0.14);
-  color: #0b6bcb;
-}
-
-.skeleton {
-  background: linear-gradient(90deg, var(--color-border), var(--color-surface), var(--color-border));
-  background-size: 200% 100%;
-  animation: shimmer 1.4s ease infinite;
-  border-radius: var(--radius-sm);
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+  gap: 1rem;
 }
