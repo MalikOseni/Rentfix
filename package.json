@@ -2,18 +2,31 @@
   "name": "rentfix-monorepo",
   "private": true,
   "version": "0.1.0",
-  "description": "Production-ready monorepo for Rentfix with web, mobile, and backend services.",
-  "scripts": {
-    "lint": "echo 'add lints per workspace'",
-    "test": "echo 'run workspace tests'",
-    "format": "echo 'format using shared config'"
+  "description": "Production-ready monorepo for Rentfix property maintenance platform",
+  "author": "Rentfix Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   },
   "workspaces": [
     "apps/*",
     "services/*",
     "packages/*"
   ],
+  "scripts": {
+    "install:all": "npm install",
+    "lint": "npm run lint --workspaces",
+    "test": "npm run test --workspaces",
+    "build": "npm run build --workspaces",
+    "dev": "npm run dev --workspaces --parallel",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  },
   "devDependencies": {
     "typescript": "5.3.3"
-  }
+  },
+  "packageManager": "npm@9.8.1"
 }
