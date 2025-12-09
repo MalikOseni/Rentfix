@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --color-primary: #0b6bcb;
+  --color-primary-muted: #d3e7ff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f4f6fa;
+  --color-border: #e2e8f0;
+  --color-text: #0f172a;
+  --color-muted: #475569;
+  --color-success: #1f9d55;
+  --color-warning: #ea580c;
+  --color-danger: #e11d48;
+  --color-accent: #0d9488;
+  --shadow-card: 0 6px 24px rgba(15, 23, 42, 0.06);
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --spacing: 8px;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #69b1ff;
+    --color-primary-muted: #13263c;
+    --color-surface: #0b1120;
+    --color-surface-muted: #0f172a;
+    --color-border: #1e293b;
+    --color-text: #e2e8f0;
+    --color-muted: #cbd5e1;
+    --shadow-card: 0 8px 28px rgba(15, 23, 42, 0.35);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--color-primary-muted);
+  outline-offset: 2px;
+}
+
+main {
+  min-height: 100vh;
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.table-responsive {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.muted {
+  color: var(--color-muted);
+}
+
+.status-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-chip[data-variant='success'] {
+  background: rgba(31, 157, 85, 0.12);
+  color: #166534;
+}
+
+.status-chip[data-variant='warning'] {
+  background: rgba(234, 88, 12, 0.14);
+  color: #9a3412;
+}
+
+.status-chip[data-variant='danger'] {
+  background: rgba(225, 29, 72, 0.15);
+  color: #9f1239;
+}
+
+.status-chip[data-variant='info'] {
+  background: rgba(11, 107, 203, 0.14);
+  color: #0b6bcb;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--color-border), var(--color-surface), var(--color-border));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
