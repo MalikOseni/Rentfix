@@ -26,6 +26,10 @@ export class User {
   @Column({ type: 'varchar', length: 255 })
   email!: string;
 
+  @Index({ unique: true })
+  @Column({ type: 'varchar', length: 255 })
+  emailNormalized!: string;
+
   @Column({ type: 'varchar', length: 120 })
   passwordHash!: string;
 
@@ -35,6 +39,9 @@ export class User {
   @Index()
   @Column({ type: 'varchar', length: 64, nullable: true })
   tenantId!: string | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  phone!: string | null;
 
   @Column({ type: 'varchar', length: 120, nullable: true })
   firstName!: string | null;
@@ -47,6 +54,21 @@ export class User {
 
   @Column({ type: 'jsonb', nullable: true })
   metadata!: Record<string, unknown> | null;
+
+  @Column({ type: 'integer', default: 0 })
+  failedLoginAttempts!: number;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  failedLoginAt!: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  deletedAt!: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  lastLogin!: Date | null;
+
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  lastLoginIp!: string | null;
 
   @OneToMany(() => RefreshToken, (token) => token.user)
   refreshTokens!: RefreshToken[];

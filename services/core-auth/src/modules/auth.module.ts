@@ -6,6 +6,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@rentfix/config';
 import { AuthController } from '../controllers/auth.controller';
 import { UserController } from '../controllers/user.controller';
+import { AuditLog } from '../entities/audit-log.entity';
+import { Organization } from '../entities/organization.entity';
+import { Otp } from '../entities/otp.entity';
 import { Permission } from '../entities/permission.entity';
 import { RefreshToken } from '../entities/refresh-token.entity';
 import { Role } from '../entities/role.entity';
@@ -33,12 +36,12 @@ import { LoggerModule } from '../shared/logger/logger.module';
         username: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD || 'postgres',
         database: process.env.DB_NAME || 'rentfix',
-        entities: [User, Role, Permission, RefreshToken],
+        entities: [User, Role, Permission, RefreshToken, Organization, Otp, AuditLog],
         synchronize: false,
         logging: process.env.TYPEORM_LOGGING === 'true'
       })
     }),
-    TypeOrmModule.forFeature([User, Role, Permission, RefreshToken]),
+    TypeOrmModule.forFeature([User, Role, Permission, RefreshToken, Organization, Otp, AuditLog]),
     LoggerModule
   ],
   controllers: [AuthController, UserController],
