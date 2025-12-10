@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Organization } from './organization.entity';
 import { User } from './user.entity';
 
@@ -24,6 +24,12 @@ export class AuditLog {
   @Column({ type: 'text', nullable: true })
   userAgent!: string | null;
 
+  @Column({ type: 'jsonb', nullable: true })
+  details!: Record<string, unknown> | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
+
+  @DeleteDateColumn({ type: 'timestamptz', name: 'deleted_at', nullable: true })
+  deletedAt!: Date | null;
 }
