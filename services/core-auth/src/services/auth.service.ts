@@ -1,6 +1,5 @@
 import { ConflictException, HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { IsNull, Repository } from 'typeorm';
 import { AgentSignupDto } from '../dto/agent-signup.dto';
@@ -44,7 +43,7 @@ export class AuthService {
 
   async register(payload: RegisterDto): Promise<TokenResponse> {
     const normalizedEmail = this.normalizeEmail(payload.email);
-    const existing = await this.userRepository.findOne({ where: { emailNormalized: normalizedEmail } });
+    const existing = await this.userRepository.findOne({ where: { emailNormalized: normalizedEmail, deletedAt: IsNull() } });
     if (existing) {
       throw new ConflictException('Email already registered');
     }
@@ -69,7 +68,7 @@ export class AuthService {
 
   async agentSignup(payload: AgentSignupDto, ip?: string, userAgent?: string): Promise<AgentSignupResponse> {
     const normalizedEmail = this.normalizeEmail(payload.email);
-    const existing = await this.userRepository.findOne({ where: { emailNormalized: normalizedEmail } });
+    const existing = await this.userRepository.findOne({ where: { emailNormalized: normalizedEmail, deletedAt: IsNull() } });
     if (existing) {
       throw new ConflictException('Email already registered');
     }
@@ -117,7 +116,7 @@ export class AuthService {
 
   async login(email: string, password: string, ip?: string): Promise<TokenResponse> {
     const normalizedEmail = this.normalizeEmail(email);
-    const user = await this.userRepository.findOne({ where: { emailNormalized: normalizedEmail } });
+    const user = await this.userRepository.findOne({ where: { emailNormalized: normalizedEmail, deletedAt: IsNull() } });
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -149,7 +148,7 @@ export class AuthService {
 
   async refresh(refreshToken: string): Promise<TokenResponse> {
     const payload = this.tokenService.verifyRefresh(refreshToken);
-    const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+    const user = await this.userRepository.findOne({ where: { id: payload.sub, deletedAt: IsNull() } });
     if (!user) {
       throw new UnauthorizedException('Unknown account');
     }
@@ -243,8 +242,8 @@ export class AuthService {
     const temporaryToken = crypto.randomBytes(32).toString('base64url');
     const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
 
-    const otpHash = await bcrypt.hash(otpCode, 10);
-    const tempTokenHash = await bcrypt.hash(temporaryToken, 10);
+    const otpHash = await this.passwordService.hash(otpCode);
+    const tempTokenHash = await this.passwordService.hash(temporaryToken);
     const otpEntity = this.otpRepository.create({
       user,
       otpHash,
@@ -260,10 +259,10 @@ export class AuthService {
 
   private async findMatchingOtp(records: Otp[], temporaryToken: string, otp: string): Promise<Otp | null> {
     for (const record of records) {
-      const tokenMatches = await bcrypt.compare(temporaryToken, record.temporaryTokenHash);
+      const tokenMatches = await this.passwordService.verifyHash(temporaryToken, record.temporaryTokenHash);
       if (!tokenMatches) continue;
 
-      const otpMatches = await bcrypt.compare(otp, record.otpHash);
+      const otpMatches = await this.passwordService.verifyHash(otp, record.otpHash);
       if (!otpMatches) continue;
 
       return record;
