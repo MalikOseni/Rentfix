@@ -34,7 +34,7 @@ export class AuthController {
   @UseGuards(RateLimitGuard)
   @RateLimit('login')
   async login(@Body() body: LoginDto): Promise<TokenResponse> {
-    return this.authService.login(body.email, body.password);
+    return this.authService.login(body.email, body.password, undefined, body.organizationId);
   }
 
   @Post('token')

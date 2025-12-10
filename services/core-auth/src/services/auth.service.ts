@@ -1,15 +1,18 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   HttpException,
   HttpStatus,
   Injectable,
   NotFoundException,
+  PaymentRequiredException,
   UnauthorizedException
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import crypto from 'crypto';
-import { IsNull, Repository } from 'typeorm';
+import { DataSource, IsNull, Repository } from 'typeorm';
+import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js';
 import { AgentSignupDto } from '../dto/agent-signup.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { TokenResponse } from '../dto/token.response';
@@ -23,12 +26,11 @@ import { TenantInvite } from '../entities/tenant-invite.entity';
 import { User, UserRole } from '../entities/user.entity';
 import { PasswordService } from './password.service';
 import { TokenService } from './token.service';
-import { maskEmail, maskPhone } from '../shared/utils/audit.utils';
 
 const LOGIN_ATTEMPT_LIMIT = 5;
 const LOGIN_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 const OTP_EXPIRY_MS = 10 * 60 * 1000;
-const INVITE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+const INVITE_EXPIRY_MS = 72 * 60 * 60 * 1000;
 
 export interface AgentSignupResponse {
   temporaryToken: string;
@@ -52,6 +54,8 @@ export class AuthService {
     private readonly tenantInviteRepository: Repository<TenantInvite>,
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
     private readonly passwordService: PasswordService,
     private readonly tokenService: TokenService
   ) {
@@ -93,38 +97,56 @@ export class AuthService {
     }
 
     const passwordHash = await this.passwordService.hash(payload.password);
-    const user = this.userRepository.create({
-      email: payload.email,
-      emailNormalized: normalizedEmail,
-      passwordHash,
-      role: UserRole.agent,
-      tenantId: null,
-      phone: payload.phone,
-      emailVerified: false,
-      firstName: null,
-      lastName: null
-    });
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const savedUser = await this.userRepository.save(user);
-    const organization = this.organizationRepository.create({
-      owner: savedUser,
-      name: payload.companyName,
-      companyRegistrationNumber: payload.companyRegistrationNumber ?? null,
-      plan: 'pro',
-      status: 'active',
-      propertiesQuota: 5,
-      stripeCustomerId: null
-    });
-    const savedOrg = await this.organizationRepository.save(organization);
+    let savedUser: User;
+    let savedOrg: Organization;
+    try {
+      const user = queryRunner.manager.create(User, {
+        email: payload.email,
+        emailNormalized: normalizedEmail,
+        passwordHash,
+        role: UserRole.agent,
+        tenantId: null,
+        phone: payload.phone,
+        emailVerified: false,
+        firstName: null,
+        lastName: null
+      });
 
-    // OWNER role with full permissions
-    const ownerRole = this.roleRepository.create({
-      name: 'OWNER',
-      user: savedUser,
-      organization: savedOrg,
-      permissionGrants: ['*']
-    });
-    await this.roleRepository.save(ownerRole);
+      savedUser = await queryRunner.manager.save(user);
+      const organization = queryRunner.manager.create(Organization, {
+        owner: savedUser,
+        name: payload.companyName,
+        companyRegistrationNumber: payload.companyRegistrationNumber ?? null,
+        plan: 'pro',
+        status: 'active',
+        propertiesQuota: 5,
+        stripeCustomerId: null
+      });
+      savedOrg = await queryRunner.manager.save(organization);
+
+      // OWNER role with full permissions
+      const ownerRole = queryRunner.manager.create(Role, {
+        name: 'OWNER',
+        user: savedUser,
+        organization: savedOrg,
+        permissionGrants: ['*']
+      });
+      await queryRunner.manager.save(ownerRole);
+
+      savedUser.tenantId = savedOrg.id;
+      await queryRunner.manager.save(savedUser);
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
 
     const { otpCode, temporaryToken, expiresAt } = await this.issueOtp(savedUser);
     await this.logAudit('SIGNUP_INITIATED', savedUser, savedOrg, ip, userAgent);
@@ -133,7 +155,7 @@ export class AuthService {
     return { temporaryToken, otpExpiresAt: expiresAt, otpDelivery: { email: payload.email, sms: payload.phone } };
   }
 
-  async login(email: string, password: string, ip?: string): Promise<TokenResponse> {
+  async login(email: string, password: string, ip?: string, organizationId?: string): Promise<TokenResponse> {
     const normalizedEmail = this.normalizeEmail(email);
     const user = await this.userRepository.findOne({ where: { emailNormalized: normalizedEmail, deletedAt: IsNull() } });
     if (!user) {
@@ -150,8 +172,32 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    if (user.deletedAt) {
-      throw new UnauthorizedException('Account suspended');
+    const organization = await this.organizationRepository.findOne({
+      where: { owner: { id: user.id }, deletedAt: IsNull() }
+    });
+
+    if (organizationId && organization && organization.id !== organizationId) {
+      throw new UnauthorizedException('Organization mismatch');
+    }
+
+    if (organization?.status?.toUpperCase() === 'SUSPENDED') {
+      throw new UnauthorizedException('Organization is suspended');
+    }
+
+    if (organization?.plan?.toUpperCase() === 'FREE') {
+      const propertiesCount = (organization as any).propertiesCount ?? 0;
+      if (propertiesCount > 1) {
+        throw new PaymentRequiredException('Upgrade required');
+      }
+    }
+
+    const subscriptionExpiresAt = (organization as any)?.subscriptionExpiresAt as Date | undefined;
+    if (subscriptionExpiresAt && subscriptionExpiresAt.getTime() < Date.now()) {
+      throw new UnauthorizedException('Subscription expired');
+    }
+
+    if (organization && !user.tenantId) {
+      user.tenantId = organization.id;
     }
 
     user.failedLoginAttempts = 0;
@@ -220,6 +266,20 @@ export class AuthService {
       throw new ForbiddenException('Organization not found');
     }
 
+    const property = await this.dataSource.query(
+      'SELECT id, owner_id, deleted_at FROM properties WHERE id = $1 AND owner_id = $2 LIMIT 1',
+      [propertyId, agent.id]
+    );
+    if (!property || property.length === 0 || property[0].deleted_at) {
+      throw new ForbiddenException('You do not own this property');
+    }
+
+    if (tenantPhone && !isValidPhoneNumber(tenantPhone, 'GB')) {
+      throw new BadRequestException('Invalid phone number');
+    }
+
+    const normalizedPhone = tenantPhone ? parsePhoneNumber(tenantPhone, 'GB').format('E.164') : null;
+
     const inviteToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = await this.passwordService.hash(inviteToken);
     const expiresAt = new Date(Date.now() + INVITE_EXPIRY_MS);
@@ -228,7 +288,7 @@ export class AuthService {
       invitedBy: agent,
       organization,
       invitedEmail: tenantEmail,
-      invitedPhone: tenantPhone ?? null,
+      invitedPhone: normalizedPhone,
       propertyId: propertyId ?? null,
       tokenHash,
       expiresAt,
@@ -244,7 +304,13 @@ export class AuthService {
     return { token: inviteToken, expiresAt };
   }
 
-  async acceptTenantInvite(token: string, name: string, password: string, phone: string): Promise<User> {
+  async acceptTenantInvite(
+    token: string,
+    name: string,
+    password: string,
+    phone: string,
+    organizationId?: string
+  ): Promise<User> {
     const invites = await this.tenantInviteRepository.find({
       where: { deletedAt: IsNull() },
       relations: ['organization', 'invitedBy']
@@ -264,6 +330,14 @@ export class AuthService {
     }
 
     const invite = matching;
+
+    if (organizationId && invite.organization.id !== organizationId) {
+      throw new BadRequestException('Invite not found or expired');
+    }
+
+    if (invite.organization.deletedAt) {
+      throw new BadRequestException('Invite not found or expired');
+    }
 
     const [firstName, ...rest] = name.split(' ');
     const lastName = rest.join(' ') || null;
@@ -298,31 +372,76 @@ export class AuthService {
     hourlyRate: number,
     insuranceCertUrl: string | undefined,
     bankAccount: string
-  ): Promise<{ status: string; businessName: string }> {
-    await this.logAudit('CONTRACTOR_REGISTERED', null, null, undefined, undefined, {
-      businessName
+  ): Promise<{ status: string; businessName: string; background_check_status: string }> {
+    const generatedEmail = `${crypto.randomUUID()}@contractor.local`;
+    const passwordHash = await this.passwordService.hash(crypto.randomBytes(12).toString('hex'));
+    const contractorUser = this.userRepository.create({
+      email: generatedEmail,
+      emailNormalized: this.normalizeEmail(generatedEmail),
+      passwordHash,
+      role: UserRole.contractor,
+      tenantId: null,
+      phone: null,
+      emailVerified: false,
+      firstName: businessName,
+      lastName: null
+    });
+
+    const savedUser = await this.userRepository.save(contractorUser);
+    const contractorOrg = this.organizationRepository.create({
+      owner: savedUser,
+      name: businessName,
+      companyRegistrationNumber: null,
+      plan: 'contractor',
+      status: 'pending',
+      propertiesQuota: 0,
+      stripeCustomerId: null
+    });
+    const savedOrg = await this.organizationRepository.save(contractorOrg);
+    savedUser.tenantId = savedOrg.id;
+    await this.userRepository.save(savedUser);
+
+    const role = this.roleRepository.create({
+      name: 'CONTRACTOR',
+      user: savedUser,
+      organization: savedOrg,
+      permissionGrants: []
+    });
+    await this.roleRepository.save(role);
+
+    // background check stub
+    const backgroundCheckStatus = 'REQUESTED';
+
+    await this.logAudit('CONTRACTOR_REGISTERED', savedUser, null, undefined, undefined, {
+      businessName,
+      specialties: specialties.join(','),
+      hourlyRate,
+      insuranceCertProvided: Boolean(insuranceCertUrl)
     });
 
     return {
       status: 'PENDING',
-      businessName
+      businessName,
+      background_check_status: backgroundCheckStatus
     };
   }
 
   async refreshAccessToken(refreshToken: string): Promise<TokenResponse> {
     const payload = this.tokenService.verifyRefresh(refreshToken);
-    const user = await this.userRepository.findOne({ where: { id: payload.sub, deletedAt: IsNull() } });
+    const user = await this.userRepository.findOne({
+      where: { id: payload.sub, tenantId: payload.org_id, deletedAt: IsNull() }
+    });
     if (!user) {
       throw new UnauthorizedException('Unknown account');
     }
 
     const tokens = await this.refreshTokenRepository.find({
-      where: { user: { id: user.id }, revokedAt: IsNull(), deletedAt: IsNull() },
+      where: { user: { id: user.id, tenantId: payload.org_id }, revokedAt: IsNull(), deletedAt: IsNull() },
       relations: ['user']
     });
 
     const validToken = await this.findMatchingRefreshToken(tokens, refreshToken);
-    if (!validToken) {
+    if (!validToken || validToken.user.tenantId !== payload.org_id) {
       await this.revokeAllUserSessions(user.id);
       throw new UnauthorizedException('Refresh token expired');
     }
@@ -462,9 +581,9 @@ export class AuthService {
     const sanitizedDetails = details
       ? Object.entries(details).reduce<Record<string, unknown>>((acc, [key, value]) => {
           if (typeof value === 'string' && value.includes('@')) {
-            acc[key] = maskEmail(value);
+            acc[key] = this.maskEmail(value);
           } else if (typeof value === 'string' && value.replace(/\D/g, '').length >= 4) {
-            acc[key] = maskPhone(value);
+            acc[key] = this.maskPhone(value);
           } else {
             acc[key] = value;
           }
@@ -476,10 +595,32 @@ export class AuthService {
       action,
       user,
       organization,
-      ip: ip ?? null,
-      userAgent: userAgent ?? null,
+      ip: this.maskIp(ip ?? null),
+      userAgent: this.maskUserAgent(userAgent ?? null),
       details: sanitizedDetails
     });
     await this.auditLogRepository.save(entry);
+  }
+
+  private maskEmail(email: string | null): string | null {
+    if (!email) return null;
+    const [local] = email.split('@');
+    return `${local.slice(0, 2)}***@***`;
+  }
+
+  private maskPhone(phone: string | null): string | null {
+    if (!phone) return null;
+    return `+44***${phone.slice(-4)}`;
+  }
+
+  private maskIp(ip: string | null): string | null {
+    if (!ip) return null;
+    return ip.replace(/\d+$/, 'x');
+  }
+
+  private maskUserAgent(ua: string | null): string | null {
+    if (!ua) return null;
+    const match = ua.match(/(Chrome|Safari|Firefox|Edge)\/([\d.]+)/);
+    return match ? `${match[1]}/${match[2].split('.')[0]}` : 'Unknown';
   }
 }
