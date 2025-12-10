@@ -1,6 +1,7 @@
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   Index,
   JoinColumn,
@@ -58,4 +59,7 @@ export class TenantInviteEntity {
 
   @Column({ name: 'accepted_at', type: 'timestamp', nullable: true })
   acceptedAt!: Date | null;
+
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
+  deletedAt!: Date | null;
 }

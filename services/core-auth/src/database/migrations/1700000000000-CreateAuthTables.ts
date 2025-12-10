@@ -19,15 +19,21 @@ export class CreateAuthTables1700000000000 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE "users" (
         "id" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+        "email" varchar(255) NOT NULL,
         "email_normalized" varchar(255) NOT NULL,
         "password_hash" varchar(255) NOT NULL,
+        "role" varchar(50) NOT NULL DEFAULT 'tenant',
+        "tenant_id" varchar(64),
         "phone_e164" varchar(20),
+        "first_name" varchar(120),
+        "last_name" varchar(120),
         "email_verified" boolean NOT NULL DEFAULT false,
         "phone_verified" boolean NOT NULL DEFAULT false,
         "otp_hash" varchar(255),
         "otp_created_at" timestamp,
         "otp_expires_at" timestamp,
         "otp_use_count" integer NOT NULL DEFAULT 0,
+        "metadata" jsonb,
         "failed_login_attempts" integer NOT NULL DEFAULT 0,
         "failed_login_at" timestamp,
         "last_login" timestamp,
@@ -90,6 +96,7 @@ export class CreateAuthTables1700000000000 implements MigrationInterface {
         "created_at" timestamp NOT NULL DEFAULT now(),
         "sent_at" timestamp,
         "accepted_at" timestamp,
+        "deleted_at" timestamp,
         CONSTRAINT "UQ_tenant_invites_invite_token_hash" UNIQUE ("invite_token_hash"),
         CONSTRAINT "FK_tenant_invites_organization" FOREIGN KEY ("organization_id") REFERENCES "organizations"("id") ON DELETE CASCADE,
         CONSTRAINT "FK_tenant_invites_property" FOREIGN KEY ("property_id") REFERENCES "properties"("id") ON DELETE CASCADE,
@@ -108,6 +115,7 @@ export class CreateAuthTables1700000000000 implements MigrationInterface {
         "expires_at" timestamp NOT NULL,
         "revoked_at" timestamp,
         "created_at" timestamp NOT NULL DEFAULT now(),
+        "deleted_at" timestamp,
         CONSTRAINT "UQ_refresh_tokens_token_hash" UNIQUE ("token_hash"),
         CONSTRAINT "FK_refresh_tokens_user" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE
       );
@@ -121,7 +129,8 @@ export class CreateAuthTables1700000000000 implements MigrationInterface {
         "status" varchar(50),
         "reason" varchar(255),
         "user_agent" text,
-        "created_at" timestamp NOT NULL DEFAULT now()
+        "created_at" timestamp NOT NULL DEFAULT now(),
+        "deleted_at" timestamp
       );
     `);
 
@@ -168,13 +177,16 @@ export class CreateAuthTables1700000000000 implements MigrationInterface {
     await queryRunner.query(
       'CREATE UNIQUE INDEX "idx_tenant_invites_invite_token_hash" ON "tenant_invites" ("invite_token_hash")'
     );
+    await queryRunner.query('CREATE INDEX "idx_tenant_invites_deleted_at_null" ON "tenant_invites" ("deleted_at") WHERE "deleted_at" IS NULL');
 
     await queryRunner.query('CREATE INDEX "idx_refresh_tokens_user_id" ON "refresh_tokens" ("user_id")');
     await queryRunner.query('CREATE INDEX "idx_refresh_tokens_user_expires" ON "refresh_tokens" ("user_id", "expires_at")');
     await queryRunner.query('CREATE INDEX "idx_refresh_tokens_revoked_at" ON "refresh_tokens" ("revoked_at")');
+    await queryRunner.query('CREATE INDEX "idx_refresh_tokens_deleted_at_null" ON "refresh_tokens" ("deleted_at") WHERE "deleted_at" IS NULL');
 
     await queryRunner.query('CREATE INDEX "idx_login_attempts_email_created" ON "login_attempts" ("email_normalized", "created_at")');
     await queryRunner.query('CREATE INDEX "idx_login_attempts_ip_created" ON "login_attempts" ("ip_address", "created_at")');
+    await queryRunner.query('CREATE INDEX "idx_login_attempts_deleted_at_null" ON "login_attempts" ("deleted_at") WHERE "deleted_at" IS NULL');
 
     await queryRunner.query('CREATE INDEX "idx_audit_logs_user_created" ON "audit_logs" ("user_id", "created_at")');
     await queryRunner.query('CREATE INDEX "idx_audit_logs_org_created" ON "audit_logs" ("organization_id", "created_at")');

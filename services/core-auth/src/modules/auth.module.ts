@@ -14,6 +14,7 @@ import { RefreshToken } from '../entities/refresh-token.entity';
 import { Role } from '../entities/role.entity';
 import { TenantInvite } from '../entities/tenant-invite.entity';
 import { User } from '../entities/user.entity';
+import { LoginAttemptEntity } from '../database/entities/login-attempt.entity';
 import { AccessTokenStrategy } from '../strategies/access-token.strategy';
 import { RefreshTokenStrategy } from '../strategies/refresh-token.strategy';
 import { AuthService } from '../services/auth.service';
@@ -38,12 +39,12 @@ import { LoggerModule } from '../shared/logger/logger.module';
         username: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD || 'postgres',
         database: process.env.DB_NAME || 'rentfix',
-        entities: [User, Role, Permission, RefreshToken, Organization, Otp, AuditLog],
+        entities: [User, Role, Permission, RefreshToken, Organization, Otp, AuditLog, LoginAttemptEntity],
         synchronize: false,
         logging: process.env.TYPEORM_LOGGING === 'true'
       })
     }),
-    TypeOrmModule.forFeature([User, Role, Permission, RefreshToken, Organization, Otp, AuditLog, TenantInvite]),
+    TypeOrmModule.forFeature([User, Role, Permission, RefreshToken, Organization, Otp, AuditLog, TenantInvite, LoginAttemptEntity]),
     LoggerModule
   ],
   controllers: [AuthController, UserController],
