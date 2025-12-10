@@ -12,6 +12,7 @@ import { Otp } from '../entities/otp.entity';
 import { Permission } from '../entities/permission.entity';
 import { RefreshToken } from '../entities/refresh-token.entity';
 import { Role } from '../entities/role.entity';
+import { TenantInvite } from '../entities/tenant-invite.entity';
 import { User } from '../entities/user.entity';
 import { AccessTokenStrategy } from '../strategies/access-token.strategy';
 import { RefreshTokenStrategy } from '../strategies/refresh-token.strategy';
@@ -20,6 +21,7 @@ import { PasswordService } from '../services/password.service';
 import { TokenService } from '../services/token.service';
 import { TenantGuard } from '../shared/guards/tenant.guard';
 import { RbacGuard } from '../shared/guards/rbac.guard';
+import { RateLimitGuard } from '../shared/guards/rate-limit.guard';
 import { LoggerModule } from '../shared/logger/logger.module';
 
 @Module({
@@ -41,7 +43,7 @@ import { LoggerModule } from '../shared/logger/logger.module';
         logging: process.env.TYPEORM_LOGGING === 'true'
       })
     }),
-    TypeOrmModule.forFeature([User, Role, Permission, RefreshToken, Organization, Otp, AuditLog]),
+    TypeOrmModule.forFeature([User, Role, Permission, RefreshToken, Organization, Otp, AuditLog, TenantInvite]),
     LoggerModule
   ],
   controllers: [AuthController, UserController],
@@ -52,7 +54,8 @@ import { LoggerModule } from '../shared/logger/logger.module';
     AccessTokenStrategy,
     RefreshTokenStrategy,
     TenantGuard,
-    RbacGuard
+    RbacGuard,
+    RateLimitGuard
   ],
   exports: [TenantGuard, RbacGuard, TokenService]
 })

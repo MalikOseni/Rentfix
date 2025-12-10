@@ -8,6 +8,7 @@ export class TokenService {
   constructor(private readonly jwtService: JwtService) {}
 
   async generateTokens(user: User, tokenVersion = 1): Promise<TokenResponse> {
+    this.ensureSecrets();
     const payload = {
       sub: user.id,
       email: user.email,
@@ -18,13 +19,13 @@ export class TokenService {
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_ACCESS_SECRET || 'access-secret',
+      secret: process.env.JWT_ACCESS_SECRET!,
       expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m'
     });
 
     const refreshToken = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_REFRESH_SECRET || 'refresh-secret',
-      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d'
+      secret: process.env.JWT_REFRESH_SECRET!,
+      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
     });
 
     return {
@@ -37,17 +38,23 @@ export class TokenService {
 
   verifyAccess(token: string) {
     return this.jwtService.verify(token, {
-      secret: process.env.JWT_ACCESS_SECRET || 'access-secret'
+      secret: process.env.JWT_ACCESS_SECRET!
     });
   }
 
   verifyRefresh(token: string) {
     try {
       return this.jwtService.verify(token, {
-        secret: process.env.JWT_REFRESH_SECRET || 'refresh-secret'
+        secret: process.env.JWT_REFRESH_SECRET!
       });
     } catch (error) {
       throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  private ensureSecrets() {
+    if (!process.env.JWT_ACCESS_SECRET || !process.env.JWT_REFRESH_SECRET) {
+      throw new Error('JWT secrets are not configured');
     }
   }
 

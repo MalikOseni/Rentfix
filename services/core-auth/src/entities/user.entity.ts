@@ -1,6 +1,7 @@
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   Index,
   OneToMany,
@@ -61,7 +62,7 @@ export class User {
   @Column({ type: 'timestamptz', nullable: true })
   failedLoginAt!: Date | null;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @DeleteDateColumn({ type: 'timestamptz', name: 'deleted_at', nullable: true })
   deletedAt!: Date | null;
 
   @Column({ type: 'timestamptz', nullable: true })
