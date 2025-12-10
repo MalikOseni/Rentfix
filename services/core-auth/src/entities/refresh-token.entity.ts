@@ -13,6 +13,12 @@ export class RefreshToken {
   @Column({ type: 'varchar', length: 512 })
   tokenHash!: string;
 
+  @Column({ type: 'integer', default: 1 })
+  tokenVersion!: number;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  deviceFingerprint!: string | null;
+
   @Column({ type: 'timestamptz' })
   expiresAt!: Date;
 

@@ -7,12 +7,14 @@ import { User } from '../entities/user.entity';
 export class TokenService {
   constructor(private readonly jwtService: JwtService) {}
 
-  async generateTokens(user: User): Promise<TokenResponse> {
+  async generateTokens(user: User, tokenVersion = 1): Promise<TokenResponse> {
     const payload = {
       sub: user.id,
       email: user.email,
       role: user.role,
-      tenantId: user.tenantId
+      tenantId: user.tenantId,
+      org_id: user.tenantId,
+      token_version: tokenVersion
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {

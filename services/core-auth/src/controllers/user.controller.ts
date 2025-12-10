@@ -9,11 +9,12 @@ export class UserController {
   @Get('me')
   @UseGuards(AccessTokenGuard, TenantGuard, RbacGuard)
   me(@Req() req: Request) {
+    const user = req.user as Record<string, unknown> | undefined;
     return {
-      id: req.user['sub'],
-      email: req.user['email'],
-      role: req.user['role'],
-      tenantId: req.user['tenantId']
+      id: user?.['sub'] ?? null,
+      email: user?.['email'] ?? null,
+      role: user?.['role'] ?? null,
+      tenantId: user?.['tenantId'] ?? null
     };
   }
 }
