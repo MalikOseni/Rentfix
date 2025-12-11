@@ -14,12 +14,15 @@ import { RefreshToken } from '../entities/refresh-token.entity';
 import { Role } from '../entities/role.entity';
 import { TenantInvite } from '../entities/tenant-invite.entity';
 import { User } from '../entities/user.entity';
+import { Contractor } from '../entities/contractor.entity';
 import { LoginAttemptEntity } from '../database/entities/login-attempt.entity';
 import { AccessTokenStrategy } from '../strategies/access-token.strategy';
 import { RefreshTokenStrategy } from '../strategies/refresh-token.strategy';
 import { AuthService } from '../services/auth.service';
 import { PasswordService } from '../services/password.service';
 import { TokenService } from '../services/token.service';
+import { ContractorAuthService } from '../services/contractor-auth.service';
+import { PermissionsService } from '../services/permissions.service';
 import { TenantGuard } from '../shared/guards/tenant.guard';
 import { RbacGuard } from '../shared/guards/rbac.guard';
 import { RateLimitGuard } from '../shared/guards/rate-limit.guard';
@@ -39,12 +42,34 @@ import { LoggerModule } from '../shared/logger/logger.module';
         username: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD || 'postgres',
         database: process.env.DB_NAME || 'rentfix',
-        entities: [User, Role, Permission, RefreshToken, Organization, Otp, AuditLog, LoginAttemptEntity],
+        entities: [
+          User,
+          Role,
+          Permission,
+          RefreshToken,
+          Organization,
+          Otp,
+          AuditLog,
+          LoginAttemptEntity,
+          TenantInvite,
+          Contractor
+        ],
         synchronize: false,
         logging: process.env.TYPEORM_LOGGING === 'true'
       })
     }),
-    TypeOrmModule.forFeature([User, Role, Permission, RefreshToken, Organization, Otp, AuditLog, TenantInvite, LoginAttemptEntity]),
+    TypeOrmModule.forFeature([
+      User,
+      Role,
+      Permission,
+      RefreshToken,
+      Organization,
+      Otp,
+      AuditLog,
+      TenantInvite,
+      LoginAttemptEntity,
+      Contractor
+    ]),
     LoggerModule
   ],
   controllers: [AuthController, UserController],
@@ -52,12 +77,14 @@ import { LoggerModule } from '../shared/logger/logger.module';
     AuthService,
     PasswordService,
     TokenService,
+    ContractorAuthService,
+    PermissionsService,
     AccessTokenStrategy,
     RefreshTokenStrategy,
     TenantGuard,
     RbacGuard,
     RateLimitGuard
   ],
-  exports: [TenantGuard, RbacGuard, TokenService]
+  exports: [TenantGuard, RbacGuard, TokenService, PermissionsService, ContractorAuthService]
 })
 export class AuthModule {}
