@@ -4,10 +4,33 @@
     "jsx": "preserve",
     "allowJs": true,
     "noEmit": true,
-    "types": ["node", "@types/react"],
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "baseUrl": "."
+    "types": [
+      "node",
+      "@types/react"
+    ],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "baseUrl": ".",
+    "incremental": true,
+    "isolatedModules": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "playwright.config.ts",
+    "e2e/**/*"
+  ]
 }

@@ -1,13 +1,13 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authenticate } from '../../lib/api';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState('agent@example.com');
   const [password, setPassword] = useState('Password123!');
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +20,7 @@ export default function LoginPage() {
     try {
       await authenticate(email, password);
       const redirect = searchParams.get('redirect') || '/overview';
-      router.push(redirect);
+      router.push(redirect as any);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -51,5 +51,13 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
