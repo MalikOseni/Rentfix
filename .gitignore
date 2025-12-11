@@ -8,3 +8,13 @@ coverage/
 npm-debug.log*
 yarn-error.log
 pnpm-lock.yaml
+
+# Expo
+.expo/
+
+# Next.js
+.next/
+out/
+
+# Backup files
+*.backup

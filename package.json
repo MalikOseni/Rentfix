@@ -26,6 +26,7 @@
     "docker:logs": "docker-compose logs -f"
   },
   "devDependencies": {
+    "eslint": "^8.57.1",
     "typescript": "5.3.3"
   },
   "packageManager": "npm@9.8.1"

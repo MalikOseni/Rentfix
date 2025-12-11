@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ListChecks, FilePieChart, Home, Images, Building2 } from 'lucide-react';
+import { LayoutDashboard, ListChecks, FilePieChart, Home, Image, Building2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const navItems = [
@@ -10,7 +10,7 @@ const navItems = [
   { href: '/triage', label: 'Triage', icon: LayoutDashboard },
   { href: '/assignments', label: 'Assignments', icon: ListChecks },
   { href: '/properties', label: 'Properties', icon: Building2 },
-  { href: '/evidence', label: 'Evidence', icon: Images },
+  { href: '/evidence', label: 'Evidence', icon: Image },
   { href: '/analytics', label: 'Analytics', icon: FilePieChart }
 ];
 
@@ -39,7 +39,7 @@ export function Sidebar() {
                 'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold text-[var(--color-text)] transition',
                 active ? 'bg-[var(--color-primary-muted)] text-[var(--color-primary)]' : 'hover:bg-[var(--color-primary-muted)]'
               )}
-              href={item.href}
+              href={item.href as any}
             >
               <Icon size={18} />
               {item.label}

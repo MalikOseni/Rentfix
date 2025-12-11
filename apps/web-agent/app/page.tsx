@@ -17,7 +17,7 @@ export default function HomePage() {
           <article key={section.title} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: 16 }}>
             <h3>{section.title}</h3>
             <p>{section.description}</p>
-            <Link href={section.href}>Open</Link>
+            <Link href={section.href as any}>Open</Link>
           </article>
         ))}
       </div>

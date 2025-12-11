@@ -10,10 +10,13 @@
     "test": "echo 'add contractor mobile tests'"
   },
   "dependencies": {
-    "expo": "49.0.0",
-    "expo-router": "2.0.10",
+    "expo": "^49.0.20",
+    "expo-constants": "^14.4.2",
+    "expo-linking": "^5.0.2",
+    "expo-router": "^2.0.10",
+    "expo-splash-screen": "^0.20.5",
     "react": "18.2.0",
-    "react-native": "0.72.6"
+    "react-native": "^0.72.10"
   },
   "devDependencies": {
     "@types/react": "18.2.38",
