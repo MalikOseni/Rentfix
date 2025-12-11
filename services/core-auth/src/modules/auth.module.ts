@@ -15,6 +15,11 @@ import { Role } from '../entities/role.entity';
 import { TenantInvite } from '../entities/tenant-invite.entity';
 import { User } from '../entities/user.entity';
 import { Contractor } from '../entities/contractor.entity';
+import { ContractorAvailability } from '../entities/contractor-availability.entity';
+import { ContractorRating } from '../entities/contractor-rating.entity';
+import { ContractorPortfolio } from '../entities/contractor-portfolio.entity';
+import { ContractorQualification } from '../entities/contractor-qualification.entity';
+import { EventLog } from '../entities/event-log.entity';
 import { LoginAttemptEntity } from '../database/entities/login-attempt.entity';
 import { AccessTokenStrategy } from '../strategies/access-token.strategy';
 import { RefreshTokenStrategy } from '../strategies/refresh-token.strategy';
@@ -52,7 +57,12 @@ import { LoggerModule } from '../shared/logger/logger.module';
           AuditLog,
           LoginAttemptEntity,
           TenantInvite,
-          Contractor
+          Contractor,
+          ContractorAvailability,
+          ContractorRating,
+          ContractorPortfolio,
+          ContractorQualification,
+          EventLog
         ],
         synchronize: false,
         logging: process.env.TYPEORM_LOGGING === 'true'
@@ -68,7 +78,12 @@ import { LoggerModule } from '../shared/logger/logger.module';
       AuditLog,
       TenantInvite,
       LoginAttemptEntity,
-      Contractor
+      Contractor,
+      ContractorAvailability,
+      ContractorRating,
+      ContractorPortfolio,
+      ContractorQualification,
+      EventLog
     ]),
     LoggerModule
   ],
