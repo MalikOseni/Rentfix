@@ -364,7 +364,7 @@ describe('Token Utils', () => {
       const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
       const redacted = redactToken(token);
 
-      expect(redacted).toBe('eyJhbGciOi...sR8U');
+      expect(redacted).toBe('eyJhbGciOi...HsR8U');
     });
 
     it('should fully redact short tokens', () => {

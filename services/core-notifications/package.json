@@ -6,7 +6,8 @@
     "dev": "ts-node-dev --respawn --transpileOnly src/main.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
-    "test": "echo 'add notifications tests'"
+    "test": "echo 'add notifications tests'",
+    "lint": "eslint src --ext .ts --max-warnings=0"
   },
   "dependencies": {
     "@nestjs/common": "10.2.7",

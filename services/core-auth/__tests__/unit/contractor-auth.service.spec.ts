@@ -104,7 +104,7 @@ describe('ContractorAuthService', () => {
       businessName: 'Test Plumbing LLC',
       firstName: 'John',
       lastName: 'Doe',
-      phone: '+447700900123',
+      phone: '+447911123456',
       specialties: ['plumbing', 'hvac'],
       hourlyRate: 50,
       insuranceCertUrl: 'https://example.com/cert.pdf',
