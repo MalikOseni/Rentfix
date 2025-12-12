@@ -6,7 +6,6 @@ import {
   HttpStatus,
   Injectable,
   NotFoundException,
-  PaymentRequiredException,
   UnauthorizedException
 } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
@@ -187,7 +186,7 @@ export class AuthService {
     if (organization?.plan?.toUpperCase() === 'FREE') {
       const propertiesCount = (organization as any).propertiesCount ?? 0;
       if (propertiesCount > 1) {
-        throw new PaymentRequiredException('Upgrade required');
+        throw new HttpException('Upgrade required', HttpStatus.PAYMENT_REQUIRED);
       }
     }
 

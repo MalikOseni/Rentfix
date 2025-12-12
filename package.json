@@ -26,6 +26,9 @@
     "docker:logs": "docker-compose logs -f"
   },
   "devDependencies": {
+    "@types/uuid": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.49.0",
+    "@typescript-eslint/parser": "^8.49.0",
     "eslint": "^8.57.1",
     "typescript": "5.3.3"
   },
