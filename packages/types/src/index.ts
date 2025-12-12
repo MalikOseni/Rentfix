@@ -15,3 +15,6 @@ export interface Ticket {
   issueType: string;
   status: 'new' | 'triaged' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
 }
+
+// AI & Matching Engine Types
+export * from './ai-matching.types';
