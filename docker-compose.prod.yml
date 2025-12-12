@@ -1,0 +1,373 @@
+# ============================================================================
+# Docker Compose - Production Configuration
+#
+# Services:
+# - PostgreSQL 14 with PostGIS 3.3
+# - Redis 7 (caching + job queues)
+# - 12 NestJS microservices
+# - Nginx (reverse proxy)
+#
+# Usage:
+#   docker-compose -f docker-compose.prod.yml up -d
+#   docker-compose -f docker-compose.prod.yml logs -f
+#   docker-compose -f docker-compose.prod.yml down
+# ============================================================================
+
+version: '3.9'
+
+services:
+  # ==========================================================================
+  # Infrastructure Services
+  # ==========================================================================
+
+  # PostgreSQL with PostGIS
+  postgres:
+    image: postgis/postgis:14-3.3-alpine
+    container_name: rentfix-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-rentfix}
+      POSTGRES_USER: ${DATABASE_USER:-rentfix}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-changeme}
+      POSTGRES_INITDB_ARGS: '-E UTF8 --locale=en_US.UTF-8'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./services/database/migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      - '5432:5432'
+    networks:
+      - rentfix-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DATABASE_USER:-rentfix}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  # Redis (caching + job queues)
+  redis:
+    image: redis:7-alpine
+    container_name: rentfix-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme}
+    volumes:
+      - redis_data:/data
+    ports:
+      - '6379:6379'
+    networks:
+      - rentfix-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # ==========================================================================
+  # Backend Microservices
+  # ==========================================================================
+
+  # API Gateway (Port 4000)
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: api-gateway
+    container_name: rentfix-api-gateway
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${DATABASE_USER:-rentfix}:${DATABASE_PASSWORD:-changeme}@postgres:5432/${DATABASE_NAME:-rentfix}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - '4000:4000'
+    networks:
+      - rentfix-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  # Core Auth Service (Port 4100)
+  core-auth:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: core-auth
+    container_name: rentfix-core-auth
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4100
+      DATABASE_URL: postgresql://${DATABASE_USER:-rentfix}:${DATABASE_PASSWORD:-changeme}@postgres:5432/${DATABASE_NAME:-rentfix}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - '4100:4100'
+    networks:
+      - rentfix-network
+    depends_on:
+      - postgres
+      - redis
+
+  # Core Tickets Service (Port 4200)
+  core-tickets:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: core-tickets
+    container_name: rentfix-core-tickets
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4200
+      DATABASE_URL: postgresql://${DATABASE_USER:-rentfix}:${DATABASE_PASSWORD:-changeme}@postgres:5432/${DATABASE_NAME:-rentfix}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - '4200:4200'
+    networks:
+      - rentfix-network
+    depends_on:
+      - postgres
+      - redis
+
+  # Core Matching Service (Port 4400)
+  core-matching:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: core-matching
+    container_name: rentfix-core-matching
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4400
+      DATABASE_URL: postgresql://${DATABASE_USER:-rentfix}:${DATABASE_PASSWORD:-changeme}@postgres:5432/${DATABASE_NAME:-rentfix}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - '4400:4400'
+    networks:
+      - rentfix-network
+    depends_on:
+      - postgres
+      - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+
+  # Core Properties Service (Port 4500)
+  core-properties:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: core-properties
+    container_name: rentfix-core-properties
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4500
+      DATABASE_URL: postgresql://${DATABASE_USER:-rentfix}:${DATABASE_PASSWORD:-changeme}@postgres:5432/${DATABASE_NAME:-rentfix}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - '4500:4500'
+    networks:
+      - rentfix-network
+    depends_on:
+      - postgres
+      - redis
+
+  # Core Payments Service (Port 4600)
+  core-payments:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: core-payments
+    container_name: rentfix-core-payments
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4600
+      DATABASE_URL: postgresql://${DATABASE_USER:-rentfix}:${DATABASE_PASSWORD:-changeme}@postgres:5432/${DATABASE_NAME:-rentfix}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - '4600:4600'
+    networks:
+      - rentfix-network
+    depends_on:
+      - postgres
+      - redis
+
+  # Core Notifications Service (Port 4700)
+  core-notifications:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: core-notifications
+    container_name: rentfix-core-notifications
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4700
+      DATABASE_URL: postgresql://${DATABASE_USER:-rentfix}:${DATABASE_PASSWORD:-changeme}@postgres:5432/${DATABASE_NAME:-rentfix}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - '4700:4700'
+    networks:
+      - rentfix-network
+    depends_on:
+      - postgres
+      - redis
+
+  # Core Evidence Service (Port 4800)
+  core-evidence:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: core-evidence
+    container_name: rentfix-core-evidence
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4800
+      DATABASE_URL: postgresql://${DATABASE_USER:-rentfix}:${DATABASE_PASSWORD:-changeme}@postgres:5432/${DATABASE_NAME:-rentfix}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379
+      S3_BUCKET: ${S3_BUCKET}
+      S3_REGION: ${S3_REGION}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - '4800:4800'
+    networks:
+      - rentfix-network
+    depends_on:
+      - postgres
+      - redis
+
+  # Worker AI (Background Jobs)
+  worker-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: worker-ai
+    container_name: rentfix-worker-ai
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DATABASE_USER:-rentfix}:${DATABASE_PASSWORD:-changeme}@postgres:5432/${DATABASE_NAME:-rentfix}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    networks:
+      - rentfix-network
+    depends_on:
+      - postgres
+      - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  # Worker Media (Background Jobs)
+  worker-media:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: worker-media
+    container_name: rentfix-worker-media
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DATABASE_USER:-rentfix}:${DATABASE_PASSWORD:-changeme}@postgres:5432/${DATABASE_NAME:-rentfix}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379
+      S3_BUCKET: ${S3_BUCKET}
+      S3_REGION: ${S3_REGION}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    networks:
+      - rentfix-network
+    depends_on:
+      - postgres
+      - redis
+
+  # ==========================================================================
+  # Reverse Proxy (Nginx)
+  # ==========================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: rentfix-nginx
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    ports:
+      - '80:80'
+      - '443:443'
+    networks:
+      - rentfix-network
+    depends_on:
+      - api-gateway
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  rentfix-network:
+    driver: bridge

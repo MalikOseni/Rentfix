@@ -30,4 +30,12 @@ export class TicketsController {
   async findById(@Param('id') id: string) {
     return this.ticketsService.findById(id);
   }
+
+  @Post(':id/accept')
+  async acceptJob(
+    @Param('id') id: string,
+    @Body('contractorId') contractorId: string
+  ) {
+    return this.ticketsService.acceptJob(id, contractorId);
+  }
 }

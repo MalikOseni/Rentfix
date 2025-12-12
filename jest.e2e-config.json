@@ -1,0 +1,49 @@
+{
+  "displayName": "Rentfix E2E Tests",
+  "preset": "ts-jest",
+  "testEnvironment": "node",
+  "rootDir": ".",
+  "testMatch": [
+    "**/test/e2e/**/*.e2e-spec.ts",
+    "**/services/*/test/**/*.e2e-spec.ts"
+  ],
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "modulePaths": ["<rootDir>"],
+  "moduleNameMapper": {
+    "^@rentfix/(.*)$": "<rootDir>/packages/$1/src",
+    "^@/(.*)$": "<rootDir>/services/$1/src"
+  },
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "collectCoverageFrom": [
+    "services/**/src/**/*.ts",
+    "!services/**/src/**/*.d.ts",
+    "!services/**/src/**/__tests__/**",
+    "!services/**/src/main.ts",
+    "!services/**/src/**/index.ts"
+  ],
+  "coverageDirectory": "./coverage/e2e",
+  "coverageReporters": ["text", "lcov", "html", "json-summary"],
+  "coverageThreshold": {
+    "global": {
+      "branches": 80,
+      "functions": 80,
+      "lines": 80,
+      "statements": 80
+    }
+  },
+  "testTimeout": 60000,
+  "maxWorkers": 1,
+  "forceExit": true,
+  "detectOpenHandles": true,
+  "globals": {
+    "ts-jest": {
+      "tsconfig": {
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true
+      }
+    }
+  },
+  "setupFilesAfterEnv": ["<rootDir>/test/setup-e2e.ts"]
+}
